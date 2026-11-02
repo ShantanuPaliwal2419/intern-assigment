@@ -186,6 +186,25 @@ This document chronicles the real engineering decisions, learning moments, and i
   - **Decision**: Store the `idempotency_key` directly on the `shares` row and use an atomic conditional `UPDATE ... WHERE paid_at IS NULL`.
   - **Alternative rejected**: A separate distributed lock or in-memory map, which would not survive Worker invocations or edge distribution.
 
+---
+
+### Step 11: Member Balances Endpoint (commit: feat(api): add member balances endpoint)
+
+- **What I did**:
+  - Implemented `GET /api/homes/:homeId/balances` in `api/src/routes/homes.ts`.
+  - Used an SQL `LEFT JOIN` between `members` and unpaid `shares` (`paid_at IS NULL`), aggregating sums with `COALESCE(SUM(s.amount_cents), 0)`.
+  - Ordered rows by `m.seq ASC` to guarantee that balances are returned in member insertion order.
+  - Ensured the response payload matches `{ balances: [{ memberId, name, outstandingCents }] }` with no extra properties.
+  - With this step complete, **all visible tests across `homes.test.ts`, `bills.test.ts`, and `payments.test.ts` pass!**
+
+- **What I learned / what confused me**:
+  - TODO(Shantanu): Note what stood out about using `LEFT JOIN` with `COALESCE` to ensure members with 0 outstanding debt are retained.
+
+- **Decision (and the alternative I rejected)**:
+  - **Decision**: Aggregate member balances inside a single SQL `LEFT JOIN` query.
+  - **Alternative rejected**: Fetching all bills and shares into memory in JavaScript and performing nested reduce calculations.
+
+
 
 
 

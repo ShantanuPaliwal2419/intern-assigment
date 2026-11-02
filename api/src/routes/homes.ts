@@ -135,3 +135,42 @@ homesRoute.post('/:homeId/bills', async (c) => {
     201,
   )
 })
+
+homesRoute.get('/:homeId/balances', async (c) => {
+  const homeId = c.req.param('homeId')
+
+  // Verify home existence (returns 404 if not found)
+  const home = await c.env.DB.prepare('SELECT id FROM homes WHERE id = ?')
+    .bind(homeId)
+    .first<{ id: string }>()
+
+  if (!home) {
+    throw new HttpError(404, 'Home not found')
+  }
+
+  interface BalanceRow {
+    memberId: string
+    name: string
+    outstandingCents: number
+  }
+
+  // LEFT JOIN ensures members with 0 outstanding balance are included with 0 cents
+  const { results: balances } = await c.env.DB.prepare(`
+    SELECT 
+      m.id AS memberId,
+      m.name AS name,
+      COALESCE(SUM(s.amount_cents), 0) AS outstandingCents
+    FROM members m
+    LEFT JOIN shares s 
+      ON s.member_id = m.id 
+     AND s.paid_at IS NULL
+    WHERE m.home_id = ?
+    GROUP BY m.id, m.name, m.seq
+    ORDER BY m.seq ASC
+  `)
+    .bind(homeId)
+    .all<BalanceRow>()
+
+  return c.json({ balances: balances ?? [] }, 200)
+})
+
