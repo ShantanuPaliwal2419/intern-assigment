@@ -168,6 +168,25 @@ This document chronicles the real engineering decisions, learning moments, and i
   - **Decision**: Execute bill insertion and all share insertions in a single `c.env.DB.batch([...])` transaction.
   - **Alternative rejected**: Inserting the bill first and then looping over shares with individual `run()` queries, which risks leaving orphaned bill headers if the Worker is interrupted or a subsequent share fails.
 
+---
+
+### Step 10: Idempotent and Race-Safe Share Payment (commit: feat(api): idempotent race-safe share payment)
+
+- **What I did**:
+  - Implemented `POST /api/bills/:billId/shares/:shareId/pay` in `api/src/routes/bills.ts` and mounted it in `api/src/index.ts`.
+  - Required the `Idempotency-Key` header, returning `400 Bad Request` if omitted.
+  - Handled 404 for missing bill/share, 200 for idempotent replaying of previously paid shares with identical keys (returning original `paidAt`), and 409 Conflict if already paid with a different key.
+  - Implemented atomic conditional update (`UPDATE shares ... WHERE paid_at IS NULL`) checking `meta.changes === 1` to guarantee race safety without application-level locking.
+  - With this step complete, all tests in `api/test/payments.test.ts` pay suite pass!
+
+- **What I learned / what confused me**:
+  - TODO(Shantanu): Note what you learned regarding conditional UPDATE vs SELECT-then-UPDATE for race prevention.
+
+- **Decision (and the alternative I rejected)**:
+  - **Decision**: Store the `idempotency_key` directly on the `shares` row and use an atomic conditional `UPDATE ... WHERE paid_at IS NULL`.
+  - **Alternative rejected**: A separate distributed lock or in-memory map, which would not survive Worker invocations or edge distribution.
+
+
 
 
 
