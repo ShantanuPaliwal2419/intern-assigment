@@ -150,6 +150,25 @@ This document chronicles the real engineering decisions, learning moments, and i
   - **Decision**: Keep `splitCents` strictly pure (accepting an array and returning calculated share amounts) separate from SQL queries or HTTP contexts.
   - **Alternative rejected**: Computing split amounts inline inside database insertion loops, which makes unit testing and edge case verification much harder.
 
+---
+
+### Step 9: Create Bills Endpoint with DB.batch (commit: feat(api): create bills with atomic share creation)
+
+- **What I did**:
+  - Implemented `POST /api/homes/:homeId/bills` in `api/src/routes/homes.ts`.
+  - Added validation returning `422 Unprocessable Entity` for non-positive or non-integer `totalCents`, and for homes with 0 members.
+  - Added home existence check returning `404 Not Found`.
+  - Loaded members in order of `seq ASC`, applied `splitCents` to distribute amounts, and committed the bill and all shares atomically via `c.env.DB.batch(...)`.
+  - With this step complete, all tests in `api/test/bills.test.ts` pass!
+
+- **What I learned / what confused me**:
+  - TODO(Shantanu): Note what stood out about `DB.batch()` atomicity in D1.
+
+- **Decision (and the alternative I rejected)**:
+  - **Decision**: Execute bill insertion and all share insertions in a single `c.env.DB.batch([...])` transaction.
+  - **Alternative rejected**: Inserting the bill first and then looping over shares with individual `run()` queries, which risks leaving orphaned bill headers if the Worker is interrupted or a subsequent share fails.
+
+
 
 
 
