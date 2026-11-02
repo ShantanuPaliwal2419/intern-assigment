@@ -116,6 +116,25 @@ This document chronicles the real engineering decisions, learning moments, and i
   - **Decision**: Split endpoints into modular route files under `api/src/routes/` and mount them onto the main Hono app.
   - **Alternative rejected**: Defining all endpoints inside a monolithic `api/src/index.ts` file.
 
+---
+
+### Step 7: Add Members to Home Endpoint (commit: feat(api): add members to a home)
+
+- **What I did**:
+  - Implemented `POST /api/homes/:homeId/members` in `api/src/routes/homes.ts`.
+  - Added home existence check throwing `404 Not Found` if `homeId` does not exist.
+  - Computed the next sequential insertion integer `seq` per home (`SELECT COALESCE(MAX(seq), 0) + 1`), preserving FIFO member ordering.
+  - Inserted the member row and returned `201 Created` with `{ id, homeId, name }`.
+  - With this step complete, all tests in `api/test/homes.test.ts` pass!
+
+- **What I learned / what confused me**:
+  - TODO(Shantanu): Note what you learned about handling route parameters in Hono (`c.req.param('homeId')`) and computing sequential ranks in SQLite.
+
+- **Decision (and the alternative I rejected)**:
+  - **Decision**: Compute `seq` via `COALESCE(MAX(seq), 0) + 1` scoped to `home_id` so member sequences start at 1 for each home.
+  - **Alternative rejected**: A global autoincrement ID across all homes, which would expose global member volume and have gaps between homes.
+
+
 
 
 
