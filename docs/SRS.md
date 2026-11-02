@@ -16,10 +16,10 @@ The **Shared Bill Splitter** is a lightweight, reliable web service and single-p
 
 ```mermaid
 flowchart LR
-    User([Flatmate / Web User]) -->|Browser UI| WebApp[TanStack Router Web App]
-    Client([Automated Client / Test Suite]) -->|HTTP / JSON| API[Hono API on Cloudflare Workers]
+    User(["Flatmate / Web User"]) -->|Browser UI| WebApp["TanStack Router Web App"]
+    Client(["Automated Client / Test Suite"]) -->|HTTP / JSON| API["Hono API on Cloudflare Workers"]
     WebApp -->|HTTP / JSON| API
-    API -->|SQL Queries| DB[(Cloudflare D1 SQLite)]
+    API -->|SQL Queries| DB[("Cloudflare D1 SQLite")]
 ```
 
 - **Flatmate (Web User)**: Navigates the single-page interface to view bills, examine share distributions, and pay their unpaid share with immediate feedback.
