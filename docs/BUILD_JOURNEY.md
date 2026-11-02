@@ -100,6 +100,23 @@ This document chronicles the real engineering decisions, learning moments, and i
   - **Decision**: Centralize error formatting in Hono's `app.onError` hook via a custom `HttpError` class.
   - **Alternative rejected**: Writing boilerplate `try/catch` and manual `c.json({ error }, status)` blocks inside every individual route handler.
 
+---
+
+### Step 6: Create Homes Endpoint (commit: feat(api): create homes)
+
+- **What I did**:
+  - Implemented `POST /api/homes` in `api/src/routes/homes.ts` and mounted it in `api/src/index.ts`.
+  - Used `readJsonBody` and `requireNonEmptyString` to ensure the home name is present and non-blank.
+  - Executed a parameterized D1 insert with UUID generation (`crypto.randomUUID()`) and ISO creation timestamp, returning `201 Created` with `{ id, name }`.
+
+- **What I learned / what confused me**:
+  - TODO(Shantanu): Note what stood out about using `c.env.DB.prepare(...).bind(...).run()`.
+
+- **Decision (and the alternative I rejected)**:
+  - **Decision**: Split endpoints into modular route files under `api/src/routes/` and mount them onto the main Hono app.
+  - **Alternative rejected**: Defining all endpoints inside a monolithic `api/src/index.ts` file.
+
+
 
 
 
