@@ -84,6 +84,23 @@ This document chronicles the real engineering decisions, learning moments, and i
   - **Decision**: Place all initial tables in `0001_init.sql` with explicit named constraints directly embedded in table declarations.
   - **Alternative rejected**: Creating tables without constraints and adding checks later, or creating tables on-the-fly inside application code.
 
+---
+
+### Step 5: JSON Error Handling and Validation Helpers (commit: feat(api): add JSON error handling and input validation helpers)
+
+- **What I did**:
+  - Implemented `HttpError` class in `api/src/errors.ts` to represent HTTP status codes and error messages uniformly.
+  - Configured global `app.onError` and `app.notFound` in `api/src/index.ts`, guaranteeing all errors return `{ "error": "..." }` and never leak stack traces.
+  - Created validation utilities in `api/src/validation.ts` for safe JSON body reading, non-empty string validation, positive integer cents validation, and required header validation.
+
+- **What I learned / what confused me**:
+  - TODO(Shantanu): Note what you learned about Hono's middleware lifecycle (`onError` vs per-route try-catches).
+
+- **Decision (and the alternative I rejected)**:
+  - **Decision**: Centralize error formatting in Hono's `app.onError` hook via a custom `HttpError` class.
+  - **Alternative rejected**: Writing boilerplate `try/catch` and manual `c.json({ error }, status)` blocks inside every individual route handler.
+
+
 
 
 
