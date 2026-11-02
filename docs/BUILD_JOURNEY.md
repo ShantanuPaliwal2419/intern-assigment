@@ -134,6 +134,23 @@ This document chronicles the real engineering decisions, learning moments, and i
   - **Decision**: Compute `seq` via `COALESCE(MAX(seq), 0) + 1` scoped to `home_id` so member sequences start at 1 for each home.
   - **Alternative rejected**: A global autoincrement ID across all homes, which would expose global member volume and have gaps between homes.
 
+---
+
+### Step 8: Fair Integer Cents Split Engine (commit: feat(api): split cents evenly with remainder to earliest members)
+
+- **What I did**:
+  - Implemented `splitCents(totalCents, members)` in `api/src/split.ts` as a pure function with zero database or framework dependencies.
+  - Calculated base cents via integer division (`Math.floor(totalCents / n)`) and allocated the remainder (`totalCents % n`) one cent each to the earliest members in insertion order.
+  - Created unit tests in `api/test/split.test.ts` covering even splits, uneven splits, single member homes, sub-member totals, and 100 randomized property-based tests proving `sum(shares) === totalCents` and `max - min <= 1`.
+
+- **What I learned / what confused me**:
+  - TODO(Shantanu): Note what you found neat about isolating domain algorithms as pure functions before integrating with database writes.
+
+- **Decision (and the alternative I rejected)**:
+  - **Decision**: Keep `splitCents` strictly pure (accepting an array and returning calculated share amounts) separate from SQL queries or HTTP contexts.
+  - **Alternative rejected**: Computing split amounts inline inside database insertion loops, which makes unit testing and edge case verification much harder.
+
+
 
 
 
