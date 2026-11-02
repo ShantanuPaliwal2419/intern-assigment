@@ -204,6 +204,24 @@ This document chronicles the real engineering decisions, learning moments, and i
   - **Decision**: Aggregate member balances inside a single SQL `LEFT JOIN` query.
   - **Alternative rejected**: Fetching all bills and shares into memory in JavaScript and performing nested reduce calculations.
 
+---
+
+### Step 12: List Bills with Shares for Home (commit: feat(api): list bills with shares for a home)
+
+- **What I did**:
+  - Implemented `GET /api/homes/:homeId/bills` in `api/src/routes/homes.ts` to supply data for the frontend interface.
+  - Checked home existence, returning `404 Not Found` if missing.
+  - Fetched all bills for the home ordered newest first (`created_at DESC`), joined members to attach human-readable names to each share, and grouped shares by bill.
+  - Returns `200 OK` with `{ bills: [...] }`.
+
+- **What I learned / what confused me**:
+  - TODO(Shantanu): Note what you learned about grouping relational child rows into structured JSON DTOs.
+
+- **Decision (and the alternative I rejected)**:
+  - **Decision**: Include `memberName` directly on each share in the response so the frontend can render immediately in a single fetch.
+  - **Alternative rejected**: Returning only `memberId` on each share and forcing the frontend to make parallel requests to `/balances` and stitch the names manually in client state.
+
+
 
 
 

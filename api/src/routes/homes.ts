@@ -174,3 +174,89 @@ homesRoute.get('/:homeId/balances', async (c) => {
   return c.json({ balances: balances ?? [] }, 200)
 })
 
+homesRoute.get('/:homeId/bills', async (c) => {
+  const homeId = c.req.param('homeId')
+
+  // Verify home existence
+  const home = await c.env.DB.prepare('SELECT id FROM homes WHERE id = ?')
+    .bind(homeId)
+    .first<{ id: string }>()
+
+  if (!home) {
+    throw new HttpError(404, 'Home not found')
+  }
+
+  interface BillRow {
+    id: string
+    home_id: string
+    title: string
+    total_cents: number
+    created_at: string
+  }
+
+  const { results: bills } = await c.env.DB.prepare(
+    'SELECT id, home_id, title, total_cents, created_at FROM bills WHERE home_id = ? ORDER BY created_at DESC',
+  )
+    .bind(homeId)
+    .all<BillRow>()
+
+  interface ShareRowWithMember {
+    id: string
+    bill_id: string
+    member_id: string
+    member_name: string
+    amount_cents: number
+    paid_at: string | null
+  }
+
+  const { results: shares } = await c.env.DB.prepare(`
+    SELECT 
+      s.id,
+      s.bill_id,
+      s.member_id,
+      m.name AS member_name,
+      s.amount_cents,
+      s.paid_at
+    FROM shares s
+    JOIN members m ON m.id = s.member_id
+    JOIN bills b ON b.id = s.bill_id
+    WHERE b.home_id = ?
+    ORDER BY m.seq ASC
+  `)
+    .bind(homeId)
+    .all<ShareRowWithMember>()
+
+  interface ShareDto {
+    id: string
+    memberId: string
+    memberName: string
+    amountCents: number
+    paidAt: string | null
+  }
+
+  const sharesByBill = new Map<string, ShareDto[]>()
+  for (const share of shares ?? []) {
+    const list = sharesByBill.get(share.bill_id) ?? []
+    list.push({
+      id: share.id,
+      memberId: share.member_id,
+      memberName: share.member_name,
+      amountCents: share.amount_cents,
+      paidAt: share.paid_at,
+    })
+    sharesByBill.set(share.bill_id, list)
+  }
+
+  const responseBills = (bills ?? []).map((bill) => ({
+    id: bill.id,
+    homeId: bill.home_id,
+    title: bill.title,
+    totalCents: bill.total_cents,
+    createdAt: bill.created_at,
+    shares: sharesByBill.get(bill.id) ?? [],
+  }))
+
+  return c.json({ bills: responseBills }, 200)
+})
+
+
