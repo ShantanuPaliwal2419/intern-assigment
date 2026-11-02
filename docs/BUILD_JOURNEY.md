@@ -68,5 +68,22 @@ This document chronicles the real engineering decisions, learning moments, and i
   - **Decision**: Use an explicit integer `seq` column for member ordering and strict named constraints at the DB level.
   - **Alternative rejected**: Relying purely on `created_at` timestamp strings (which can collide or vary under clock skew) or trusting API validation alone without DB-level constraint enforcement.
 
+---
+
+### Step 4: Initial SQL Migration with Named Constraints (commit: feat(db): add initial schema with named constraints)
+
+- **What I did**:
+  - Implemented `api/migrations/0001_init.sql` creating the `homes`, `members`, `bills`, and `shares` tables.
+  - Incorporated 10 named integrity constraints including foreign key cascades, positive cents checks, non-empty text validations, and payment consistency checks.
+  - Added targeted indexes on foreign keys and lookup paths (`(home_id, seq)` on `members`, `bill_id` on `shares`, and a partial index on unpaid shares).
+
+- **What I learned / what confused me**:
+  - TODO(Shantanu): Note what stood out about how migrations are loaded and applied automatically in the Vitest Workers runtime via `readD1Migrations`.
+
+- **Decision (and the alternative I rejected)**:
+  - **Decision**: Place all initial tables in `0001_init.sql` with explicit named constraints directly embedded in table declarations.
+  - **Alternative rejected**: Creating tables without constraints and adding checks later, or creating tables on-the-fly inside application code.
+
+
 
 
